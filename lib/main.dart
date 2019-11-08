@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:noted/pages/home_page.dart';
 import 'package:noted/size_config.dart';
+import 'package:noted/ui/home_page.dart';
 
 void main() => runApp(MyApp());
 

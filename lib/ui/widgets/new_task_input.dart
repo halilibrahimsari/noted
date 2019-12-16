@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:moor/moor.dart';
-import 'package:provider/provider.dart';
-
-import '../../data/moor_database.dart';
+import 'package:moor/moor.dart' as moor;
+import 'package:noted/database/appdb.dart';
+import 'package:provider/provider.dart'; 
 
 class NewTaskInput extends StatefulWidget {
   @override
@@ -10,63 +9,78 @@ class NewTaskInput extends StatefulWidget {
 }
 
 class _NewTaskInputState extends State<NewTaskInput> {
-  DateTime newTaskDate;
-  TextEditingController controller;
+  DateTime expDate;
+  TextEditingController ctitle;
+  TextEditingController cdesc;
 
   @override
   void initState() {
+    ctitle = TextEditingController();
+    cdesc = TextEditingController();
     super.initState();
-    controller = TextEditingController();
   }
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      child: Row(
-        children: <Widget>[
-          _buildTextField(context),
-          _buildDateButton(context),
-        ],
-      ),
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: <Widget>[
+        Row(
+          children: <Widget>[
+            Expanded(
+              child: TextField(
+                controller: ctitle,
+                decoration: InputDecoration(
+                  hintText: "Task Name",
+                  prefixIcon: IconButton(
+                    icon: Icon(Icons.calendar_today),
+                    onPressed: () async {
+                      expDate = await showDatePicker(
+                        context: context,
+                        initialDate: DateTime.now(),
+                        firstDate: DateTime(2010),
+                        lastDate: DateTime(2050),
+                      );
+                    },
+                  ),
+                ),
+                onSubmitted: (context) => insertTask(),
+              ),
+            ),
+          ],
+        ),
+        Row(
+          children: <Widget>[
+            Expanded(
+              child: TextField(
+                controller: cdesc,
+                decoration: InputDecoration(hintText: "Task Name"),
+                onSubmitted: (context) => insertTask(),
+              ),
+            ),
+            IconButton(
+              icon: Icon(Icons.send),
+              onPressed: () => insertTask(),
+            )
+          ],
+        ),
+      ],
     );
   }
 
-  Expanded _buildTextField(BuildContext context) {
-    return Expanded(
-      child: TextField(
-        controller: controller,
-        decoration: InputDecoration(hintText: "Task Name"),
-        onSubmitted: (inputName) {
-          final dao = Provider.of<TaskDao>(context);
-          final task = TasksCompanion(
-            title: Value(inputName),
-            dueDate: Value(newTaskDate),
-          );
-          dao.insertTask(task);
-          resetValueAfterSubmit();
-        },
-      ),
-    );
-  }
+  void insertTask() {
+    if (ctitle.text.isNotEmpty) {
+      final database = Provider.of<TaskDao>(context);
+      final task = TasksCompanion(
+        title: moor.Value(ctitle.text),
+        desc: moor.Value(cdesc.text),
+        expDate: moor.Value(expDate),
+      );
+      database.insertTask(task);
 
-  IconButton _buildDateButton(BuildContext context) {
-    return IconButton(
-      icon: Icon(Icons.calendar_today),
-      onPressed: () async {
-        newTaskDate = await showDatePicker(
-          context: context,
-          initialDate: DateTime.now(),
-          firstDate: DateTime(2010),
-          lastDate: DateTime(2050),
-        );
-      },
-    );
-  }
-
-  void resetValueAfterSubmit() {
-    setState(() {
-      newTaskDate = null;
-      controller.clear();
-    });
+      ctitle.clear();
+      cdesc.clear();
+      expDate = null;
+    }
   }
 }

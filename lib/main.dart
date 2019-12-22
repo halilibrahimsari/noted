@@ -14,6 +14,7 @@ class MyApp extends StatelessWidget {
         Provider(builder: (_) => db.taskDao),
       ],
       child: MaterialApp(
+        theme: ThemeData(primarySwatch: Colors.deepOrange),
         title: 'Noted',
         home: HomePage(),
       ),

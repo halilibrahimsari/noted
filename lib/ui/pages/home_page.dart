@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_slidable/flutter_slidable.dart';
 import 'package:noted/database/appdb.dart';
+import 'package:noted/database/daos/task_dao.dart';
+import 'package:noted/ui/widgets/custom_dismissible_item.dart';
 import 'package:noted/ui/widgets/new_task_input.dart';
 import 'package:provider/provider.dart';
 
 class HomePage extends StatefulWidget {
+  HomePage({Key key}) : super(key: key);
   @override
   _HomePageState createState() => _HomePageState();
 }
@@ -16,26 +18,11 @@ class _HomePageState extends State<HomePage> {
     return Scaffold(
       appBar: AppBar(
         title: Text("Do Something?"),
+        centerTitle: true,
       ),
-      floatingActionButton: FloatingActionButton(
-        child: Icon(Icons.add),
-        onPressed: () {},
-      ),
-      body: Column(
-        children: <Widget>[
-          Expanded(
-            child: _buildTaskList(context),
-          ),
-        ],
-      ),
-      bottomSheet: Material(
-        elevation: 12,
-        child: SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.all(8),
-            child: NewTaskInput(),
-          ),
-        ),
+      body: _buildTaskList(context),
+      bottomNavigationBar: BottomAppBar(
+        child: NewTaskInput(),
       ),
     );
   }
@@ -43,56 +30,23 @@ class _HomePageState extends State<HomePage> {
   StreamBuilder<List<Task>> _buildTaskList(BuildContext context) {
     final database = Provider.of<TaskDao>(context);
     return StreamBuilder(
-      stream: database.watchUncompletedTasks(),
+      stream: database.watchAllTasks(),
       builder: (context, AsyncSnapshot<List<Task>> snapshot) {
         final tasks = snapshot.data ?? List();
         return ListView.builder(
             itemCount: tasks.length,
             itemBuilder: (_, index) {
               final itemTask = tasks[index];
-              return Card(
-                elevation: 3,
-                margin: EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-                child: Slidable(
-                  actionPane: SlidableDrawerActionPane(),
-                  secondaryActions: <Widget>[
-                    IconSlideAction(
-                      caption: "Delete",
-                      color: Colors.red,
-                      icon: Icons.delete,
-                      onTap: () => database.deleteTask(itemTask),
-                    )
-                  ],
-                  child: CheckboxListTile(
-                    value: itemTask.isComplete,
-                    onChanged: (newValue) {
-                      database.updateTask(itemTask.copyWith(isComplete: newValue));
-                    },
-                    title: Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 10),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: <Widget>[
-                          Text(itemTask.title),
-                          Material(
-                            borderRadius: BorderRadius.circular(10),
-                            elevation: 2,
-                            child: Padding(
-                              padding:
-                                  const EdgeInsets.symmetric(horizontal: 8),
-                              child: Text(
-                                  itemTask.expDate?.toString() ?? "No Date"),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    subtitle: Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 8),
-                      child: Text(itemTask.desc),
-                    ),
-                  ),
-                ),
+              return CustomDismissibleItem(
+                key: Key(itemTask.id.toString()),
+                task: itemTask,
+                onTap: () {                 
+                  database.updateTask(itemTask.copyWith(isComplete: !itemTask.isComplete));
+                },
+                onDismissed: (_) {
+                  database.deleteTask(itemTask);
+
+                },
               );
             });
       },
